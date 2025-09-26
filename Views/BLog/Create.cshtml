@@ -1,0 +1,415 @@
+﻿@model Blog.Models.BlogPost
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "Tạo bài viết mới";
+}
+
+<div class="create-post-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-pen-alt"></i> Tạo bài viết mới</h1>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Main Content -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-edit"></i> Nội dung bài viết</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label asp-for="Title" class="form-label"></label>
+                            <input asp-for="Title" class="form-control form-control-lg"
+                                   placeholder="Nhập tiêu đề bài viết..." required />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Summary" class="form-label"></label>
+                            <textarea asp-for="Summary" class="form-control" rows="3"
+                                      placeholder="Nhập tóm tắt ngắn gọn về bài viết..."></textarea>
+                            <span asp-validation-for="Summary" class="text-danger"></span>
+                            <div class="form-text">Tóm tắt sẽ hiển thị trong danh sách bài viết và kết quả tìm kiếm</div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Content" class="form-label"></label>
+                            <textarea asp-for="Content" class="form-control" id="content-editor" required></textarea>
+                            <span asp-validation-for="Content" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="MetaDescription" class="form-label"></label>
+                            <textarea asp-for="MetaDescription" class="form-control" rows="2"
+                                      placeholder="Mô tả cho SEO (tối đa 160 ký tự)" maxlength="160"></textarea>
+                            <span asp-validation-for="MetaDescription" class="text-danger"></span>
+                            <div class="form-text">Mô tả này sẽ hiển thị trên kết quả tìm kiếm Google</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Sidebar -->
+                <!-- Featured Image -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-image"></i> Ảnh đại diện</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label for="FeaturedImageFile" class="form-label">Chọn ảnh</label>
+                            <input type="file" name="FeaturedImageFile" id="FeaturedImageFile"
+                                   class="form-control" accept="image/*" />
+                            <div class="form-text">Định dạng: JPG, PNG, GIF, WebP. Tối đa 5MB</div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="ImageAlt" class="form-label"></label>
+                            <input asp-for="ImageAlt" class="form-control"
+                                   placeholder="Mô tả ảnh cho SEO" />
+                            <span asp-validation-for="ImageAlt" class="text-danger"></span>
+                        </div>
+
+                        <div id="image-preview" class="mt-2" style="display: none;">
+                            <img id="preview-img" src="" alt="Preview" class="img-fluid rounded" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> Thông tin bài viết</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-3">
+                            <label asp-for="Author" class="form-label"></label>
+                            <input asp-for="Author" class="form-control" placeholder="Tên tác giả" required />
+                            <span asp-validation-for="Author" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Category" class="form-label"></label>
+                            <select asp-for="Category" class="form-select">
+                                <option value="">Chọn danh mục</option>
+                                <option value="Công nghệ">Công nghệ</option>
+                                <option value="Lập trình">Lập trình</option>
+                                <option value="Thiết kế">Thiết kế</option>
+                                <option value="DevOps">DevOps</option>
+                                <option value="AI/ML">AI/ML</option>
+                                <option value="Mobile">Mobile</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Database">Database</option>
+                                <option value="Security">Security</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            <span asp-validation-for="Category" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="TagsInput" class="form-label">Thẻ tag</label>
+                            <input id="TagsInput" name="TagsInput" class="form-control"
+                                   placeholder="Ví dụ: dotnet, blog, aspnetcore" />
+                            <div class="form-text">Nhập các thẻ tag phân cách bằng dấu phẩy</div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="IsPublished" class="form-check-input" />
+                            <label asp-for="IsPublished" class="form-check-label"></label>
+                            <div class="form-text">Bỏ tick nếu muốn lưu nháp</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tools -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tools"></i> Công cụ hỗ trợ</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                    onclick="insertImagePlaceholder()">
+                                📷 Chèn ảnh
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="insertLinkPlaceholder()">
+                                🔗 Tạo link
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    onclick="insertCodeBlock()">
+                                💻 Code block
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm"
+                                    onclick="insertQuote()">
+                                💬 Quote
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm"
+                                    onclick="insertTable()">
+                                📊 Bảng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="form-actions mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Tạo bài viết
+            </button>
+            <a asp-action="Index" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> Hủy
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+    <style>
+        .create-post-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 15px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+
+            .card-header h5 {
+                margin: 0;
+                font-weight: 600;
+            }
+
+        .form-control-lg {
+            font-size: 1.2rem;
+            padding: 15px;
+        }
+
+        #image-preview img {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        .form-actions {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-outline-primary:hover,
+        .btn-outline-secondary:hover,
+        .btn-outline-info:hover,
+        .btn-outline-warning:hover,
+        .btn-outline-success:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        .tox-tinymce {
+            border-radius: 10px !important;
+            border: 2px solid #e9ecef !important;
+        }
+
+            .tox-tinymce:focus-within {
+                border-color: #667eea !important;
+                box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+            }
+
+        @@media (max-width: 768px) {
+            .create-post-container
+
+        {
+            padding: 10px;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/@Configuration["TinyMCE:ApiKey"]/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <script>
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '#content-editor',
+            height: 500,
+            menubar: 'file edit view insert format tools table help',
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+                'codesample', 'quickbars'
+            ],
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | ' +
+                'link image media table | align lineheight | numlist bullist outdent indent | ' +
+                'emoticons charmap | removeformat | fullscreen preview code | help',
+            toolbar_mode: 'sliding',
+            content_style: `
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-size: 14px;
+                    line-height: 1.6;
+                }
+                img { max-width: 100%; height: auto; border-radius: 8px; }
+                pre { background-color: #f4f4f4; padding: 10px; border-radius: 4px; }
+                blockquote {
+                    border-left: 4px solid #007bff;
+                    padding-left: 15px;
+                    margin: 15px 0;
+                    font-style: italic;
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 0 8px 8px 0;
+                }
+            `,
+            language: 'vi',
+            branding: false,
+            resize: true,
+            statusbar: true,
+            contextmenu: 'link image table',
+            quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote',
+            quickbars_insert_toolbar: 'quickimage quicktable',
+            images_upload_handler: function(blobInfo, success, failure, progress) {
+                var formData = new FormData();
+                formData.append('image', blobInfo.blob(), blobInfo.filename());
+
+                fetch('@Url.Action("UploadImage")', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        success(result.url);
+                    } else {
+                        failure('Lỗi upload ảnh: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    failure('Lỗi upload ảnh: ' + error.message);
+                });
+            },
+            setup: function(editor) {
+                editor.on('init', function() {
+                    console.log('TinyMCE initialized successfully!');
+                });
+            }
+        });
+
+        // Image preview
+        document.getElementById('FeaturedImageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File ảnh quá lớn! Vui lòng chọn file nhỏ hơn 5MB.');
+                    this.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('image-preview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Helper functions for content insertion
+        function insertImagePlaceholder() {
+            const editor = tinymce.get('content-editor');
+            if (editor) {
+                editor.insertContent('<p><img src="/images/placeholder.jpg" alt="Mô tả ảnh" style="max-width: 100%; height: auto; border-radius: 8px;" /></p>');
+            }
+        }
+
+        function insertLinkPlaceholder() {
+            const editor = tinymce.get('content-editor');
+            if (editor) {
+                editor.insertContent('<a href="https://example.com" target="_blank" rel="noopener">Văn bản link</a>');
+            }
+        }
+
+        function insertCodeBlock() {
+            const editor = tinymce.get('content-editor');
+            if (editor) {
+                editor.insertContent('<pre class="language-javascript"><code>// Code của bạn ở đây\nconsole.log("Hello World!");</code></pre>');
+            }
+        }
+
+        function insertQuote() {
+            const editor = tinymce.get('content-editor');
+            if (editor) {
+                editor.insertContent('<blockquote><p>Câu quote ở đây...</p><cite>— Tác giả</cite></blockquote>');
+            }
+        }
+
+        function insertTable() {
+            const editor = tinymce.get('content-editor');
+            if (editor) {
+                editor.insertContent(`
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #ddd; padding: 12px; background-color: #f2f2f2; text-align: left;">Cột 1</th>
+                                <th style="border: 1px solid #ddd; padding: 12px; background-color: #f2f2f2; text-align: left;">Cột 2</th>
+                                <th style="border: 1px solid #ddd; padding: 12px; background-color: #f2f2f2; text-align: left;">Cột 3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Dữ liệu 1</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Dữ liệu 2</td>
+                                <td style="border: 1px solid #ddd; padding: 12px;">Dữ liệu 3</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `);
+            }
+        }
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const content = tinymce.get('content-editor').getContent();
+            if (!content || content.trim() === '') {
+                e.preventDefault();
+                alert('Vui lòng nhập nội dung bài viết!');
+                return false;
+            }
+
+            // Show loading
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+            submitBtn.disabled = true;
+        });
+    </script>
+}

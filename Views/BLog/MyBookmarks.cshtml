@@ -1,0 +1,1005 @@
+﻿@model IEnumerable<Blog.Models.BlogPost>
+@{
+    ViewData["Title"] = "Bài viết đã lưu";
+}
+
+<div class="bookmarks-container">
+    <div class="bookmarks-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-bookmark text-warning"></i> Bài viết đã lưu</h1>
+                <p class="text-muted">Quản lý các bài viết bạn đã đánh dấu để đọc sau</p>
+            </div>
+            <div class="header-actions">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Khám phá thêm
+                </a>
+                <div class="dropdown d-inline-block ms-2">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                            id="sortDropdown" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort"></i> Sắp xếp
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="sortBookmarks('newest')">Mới nhất</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortBookmarks('oldest')">Cũ nhất</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortBookmarks('mostViewed')">Xem nhiều nhất</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortBookmarks('title')">Theo tiêu đề</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model?.Any() == true)
+    {
+        <!-- Stats Summary -->
+        <div class="stats-summary mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>@Model.Count()</h3>
+                            <p>Bài viết đã lưu</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>@Model.Sum(p => p.ViewCount)</h3>
+                            <p>Tổng lượt xem</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>@Model.SelectMany(p => p.Tags ?? new List<string>()).Distinct().Count()</h3>
+                            <p>Tags khác nhau</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>@(Model.Sum(p => p.Content?.Length ?? 0) / 500)</h3>
+                            <p>Phút đọc ước tính</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="filter-section mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" class="form-control"
+                               placeholder="Tìm kiếm trong bài viết đã lưu...">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="category-filter">
+                        <select id="categoryFilter" class="form-select">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach (var category in Model.Where(p => !string.IsNullOrEmpty(p.Category))
+                                                    .Select(p => p.Category).Distinct().OrderBy(c => c))
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookmarks Grid -->
+        <div class="bookmarks-grid" id="bookmarksGrid">
+            @foreach (var post in Model)
+            {
+                <div class="bookmark-card" data-category="@post.Category" data-title="@post.Title.ToLower()"
+                     data-date="@post.CreatedAt.Ticks" data-views="@post.ViewCount">
+                    <div class="bookmark-image">
+                        @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                        {
+                            <img src="@post.FeaturedImage" alt="@post.ImageAlt" />
+                        }
+                        else
+                        {
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                        }
+
+                        <!-- Quick Actions Overlay -->
+                        <div class="quick-actions">
+                            <button onclick="toggleBookmark(@post.Id)" class="action-btn remove-bookmark"
+                                    title="Bỏ lưu" data-post-id="@post.Id">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                            <a asp-action="Details" asp-route-id="@post.Id" class="action-btn view-post"
+                               title="Xem bài viết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button onclick="sharePost(@post.Id, '@post.Title')" class="action-btn share-post"
+                                    title="Chia sẻ">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+
+                        <!-- Category Badge -->
+                        @if (!string.IsNullOrEmpty(post.Category))
+                        {
+                            <span class="category-badge">@post.Category</span>
+                        }
+                    </div>
+
+                    <div class="bookmark-content">
+                        <!-- Meta Info -->
+                        <div class="bookmark-meta">
+                            <span class="author">
+                                <i class="fas fa-user"></i> @post.Author
+                            </span>
+                            <span class="date">
+                                <i class="fas fa-calendar"></i> @post.CreatedAt.ToString("dd/MM/yyyy")
+                            </span>
+                            <span class="views">
+                                <i class="fas fa-eye"></i> @post.ViewCount
+                            </span>
+                        </div>
+
+                        <!-- Title -->
+                        <h3 class="bookmark-title">
+                            <a asp-action="Details" asp-route-id="@post.Id">@post.Title</a>
+                        </h3>
+
+                        <!-- Summary -->
+                        <p class="bookmark-summary">
+                            @if (!string.IsNullOrEmpty(post.Summary))
+                            {
+                                @(post.Summary.Length > 150 ? post.Summary.Substring(0, 150) + "..." : post.Summary)
+                            }
+                            else
+                            {
+                                @Html.Raw(post.Content.Length > 150 ? post.Content.Substring(0, 150) + "..." : post.Content)
+                            }
+                        </p>
+
+                        <!-- Tags -->
+                        @if (post.Tags?.Any() == true)
+                        {
+                            <div class="bookmark-tags">
+                                @foreach (var tag in post.Tags.Take(3))
+                                {
+                                    <span class="tag" onclick="filterByTag('@tag')">#@tag</span>
+                                }
+                                @if (post.Tags.Count > 3)
+                                {
+                                    <span class="tag more-tags">+@(post.Tags.Count - 3)</span>
+                                }
+                            </div>
+                        }
+
+                        <!-- Reading Time -->
+                        <div class="reading-time">
+                            <i class="fas fa-clock"></i>
+                            @(post.Content?.Length / 500 ?? 1) phút đọc
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Load More Button -->
+        <div class="text-center mt-4">
+            <button id="loadMoreBtn" class="btn btn-outline-primary btn-lg" style="display: none;">
+                <i class="fas fa-plus"></i> Xem thêm
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Empty State -->
+        <div class="empty-bookmarks">
+            <div class="empty-icon">
+                <i class="fas fa-bookmark"></i>
+            </div>
+            <h3>Chưa có bài viết nào được lưu</h3>
+            <p>Bắt đầu khám phá và lưu những bài viết thú vị để đọc sau nhé!</p>
+            <div class="empty-actions">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search"></i> Khám phá bài viết
+                </a>
+                <button onclick="showBookmarkTips()" class="btn btn-outline-info btn-lg">
+                    <i class="fas fa-lightbulb"></i> Mẹo sử dụng
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Tips Modal -->
+<div class="modal fade" id="tipsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Mẹo sử dụng tính năng Bookmark
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="tips-content">
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div class="tip-text">
+                            <h6>Lưu bài viết</h6>
+                            <p>Nhấp vào icon bookmark ở mỗi bài viết để lưu vào danh sách của bạn</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="tip-text">
+                            <h6>Tìm kiếm nhanh</h6>
+                            <p>Sử dụng ô tìm kiếm để nhanh chóng tìm bài viết đã lưu</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <div class="tip-text">
+                            <h6>Lọc theo danh mục</h6>
+                            <p>Chọn danh mục để xem chỉ những bài viết thuộc chủ đề đó</p>
+                        </div>
+                    </div>
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <div class="tip-text">
+                            <h6>Chia sẻ dễ dàng</h6>
+                            <p>Nhấp vào icon chia sẻ để gửi bài viết cho bạn bè</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .bookmarks-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .bookmarks-header h1 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stats Summary */
+        .stats-summary {
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+            }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .stat-card:nth-child(1) .stat-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(2) .stat-icon {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(3) .stat-icon {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+
+        .stat-card:nth-child(4) .stat-icon {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            color: white;
+        }
+
+        .stat-info h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .stat-info p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+            .search-box input {
+                padding-left: 40px;
+                border-radius: 25px;
+                border: 2px solid #e9ecef;
+                transition: border-color 0.3s ease;
+            }
+
+                .search-box input:focus {
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+                }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .category-filter select {
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        /* Bookmarks Grid */
+        .bookmarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .bookmark-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+            .bookmark-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            }
+
+        .bookmark-image {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+            .bookmark-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }
+
+        .bookmark-card:hover .bookmark-image img {
+            transform: scale(1.1);
+        }
+
+        .placeholder-image {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 3rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bookmark-card:hover .quick-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: #495057;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+        }
+
+            .action-btn:hover {
+                background: white;
+                transform: scale(1.1);
+                color: #495057;
+            }
+
+            .action-btn.remove-bookmark:hover {
+                background: #dc3545;
+                color: white;
+            }
+
+            .action-btn.view-post:hover {
+                background: #28a745;
+                color: white;
+            }
+
+            .action-btn.share-post:hover {
+                background: #17a2b8;
+                color: white;
+            }
+
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Bookmark Content */
+        .bookmark-content {
+            padding: 1.5rem;
+        }
+
+        .bookmark-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+            .bookmark-meta span {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+        .bookmark-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+            .bookmark-title a {
+                color: #2c3e50;
+                text-decoration: none;
+                transition: color 0.3s ease;
+            }
+
+                .bookmark-title a:hover {
+                    color: #667eea;
+                }
+
+        .bookmark-summary {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .bookmark-tags {
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .tag:hover {
+                background: #667eea;
+                color: white;
+                transform: translateY(-2px);
+            }
+
+            .tag.more-tags {
+                background: #e9ecef;
+                color: #6c757d;
+            }
+
+        .reading-time {
+            color: #6c757d;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Empty State */
+        .empty-bookmarks {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            color: #e9ecef;
+            margin-bottom: 2rem;
+        }
+
+        .empty-bookmarks h3 {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .empty-bookmarks p {
+            color: #adb5bd;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .empty-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Tips Modal */
+        .tips-content {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .tip-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .tip-text h6 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .tip-text p {
+            margin: 0;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 768px) {
+            .bookmarks-container
+
+        {
+            padding: 1rem;
+        }
+
+        .bookmarks-header .d-flex {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .header-actions {
+            justify-content: center;
+        }
+
+        .bookmarks-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .bookmark-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .filter-section .row {
+            gap: 1rem;
+        }
+
+        .empty-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        }
+
+        @@media (max-width: 576px) {
+            .stats-summary .row
+
+        {
+            gap: 1rem;
+        }
+
+        .stat-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .stat-icon {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterBookmarks();
+        });
+
+        // Category filter
+        document.getElementById('categoryFilter').addEventListener('change', function() {
+            filterBookmarks();
+        });
+
+        // Filter bookmarks based on search and category
+        function filterBookmarks() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCategory = document.getElementById('categoryFilter').value;
+            const cards = document.querySelectorAll('.bookmark-card');
+
+            cards.forEach(card => {
+                const title = card.dataset.title;
+                const category = card.dataset.category;
+
+                const matchesSearch = !searchTerm || title.includes(searchTerm);
+                const matchesCategory = !selectedCategory || category === selectedCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    }, 100);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+
+            // Show/hide "no results" message
+            updateNoResultsMessage();
+        }
+
+        // Sort bookmarks
+        function sortBookmarks(sortBy) {
+            const grid = document.getElementById('bookmarksGrid');
+            const cards = Array.from(grid.querySelectorAll('.bookmark-card'));
+
+            cards.sort((a, b) => {
+                switch (sortBy) {
+                    case 'newest':
+                        return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+                    case 'oldest':
+                        return parseInt(a.dataset.date) - parseInt(b.dataset.date);
+                    case 'mostViewed':
+                        return parseInt(b.dataset.views) - parseInt(a.dataset.views);
+                    case 'title':
+                        return a.dataset.title.localeCompare(b.dataset.title);
+                    default:
+                        return 0;
+                }
+            });
+
+            // Re-append sorted cards
+            cards.forEach(card => grid.appendChild(card));
+
+            // Add animation
+            cards.forEach((card, index) => {
+                card.style.animation = `fadeInUp 0.5s ease ${index * 0.1}s`;
+            });
+        }
+
+        // Filter by tag
+        function filterByTag(tag) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = tag;
+            filterBookmarks();
+        }
+
+        // Toggle bookmark
+        async function toggleBookmark(postId) {
+            try {
+                const response = await fetch(`@Url.Action("ToggleBookmark", "Blog")`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ id: postId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Remove card with animation
+                    const card = document.querySelector(`[data-post-id="${postId}"]`).closest('.bookmark-card');
+                    card.style.animation = 'slideOutUp 0.5s ease';
+
+                    setTimeout(() => {
+                        card.remove();
+                        updateStats();
+                        updateNoResultsMessage();
+                    }, 500);
+
+                    showToast(result.message, 'success');
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xử lý yêu cầu', 'error');
+            }
+        }
+
+        // Share post
+        function sharePost(postId, title) {
+            const url = `${window.location.origin}@Url.Action("Details", "Blog")?id=${postId}`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                });
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast('Link đã được sao chép!', 'success');
+                });
+            }
+        }
+
+        // Update stats after removing bookmark
+        function updateStats() {
+            const cards = document.querySelectorAll('.bookmark-card:not([style*="display: none"])');
+            const totalBookmarks = cards.length;
+
+            // Update bookmark count
+            const bookmarkStat = document.querySelector('.stat-card:nth-child(1) .stat-info h3');
+            if (bookmarkStat) {
+                bookmarkStat.textContent = totalBookmarks;
+            }
+
+            // Recalculate other stats if needed
+            // This could be expanded to recalculate total views, tags, etc.
+        }
+
+        // Update no results message
+        function updateNoResultsMessage() {
+            const visibleCards = document.querySelectorAll('.bookmark-card:not([style*="display: none"])');
+            const grid = document.getElementById('bookmarksGrid');
+
+            let noResultsMsg = document.getElementById('noResultsMessage');
+
+            if (visibleCards.length === 0) {
+                if (!noResultsMsg) {
+                    noResultsMsg = document.createElement('div');
+                    noResultsMsg.id = 'noResultsMessage';
+                    noResultsMsg.className = 'text-center py-5';
+                    noResultsMsg.innerHTML = `
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Không tìm thấy bài viết nào</h4>
+                        <p class="text-muted">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+                    `;
+                    grid.parentNode.insertBefore(noResultsMsg, grid.nextSibling);
+                }
+                noResultsMsg.style.display = 'block';
+            } else {
+                if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+            }
+        }
+
+        // Show tips modal
+        function showBookmarkTips() {
+            const modal = new bootstrap.Modal(document.getElementById('tipsModal'));
+            modal.show();
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @@keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @@keyframes slideOutUp {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(-30px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add entrance animations
+            const cards = document.querySelectorAll('.bookmark-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+}

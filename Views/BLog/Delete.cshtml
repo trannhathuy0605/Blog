@@ -1,0 +1,765 @@
+﻿@model Blog.Models.BlogPost
+@{
+    ViewData["Title"] = "Xóa bài viết: " + Model.Title;
+}
+
+<div class="delete-post-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="delete-confirmation-card">
+                <div class="card-header text-center">
+                    <div class="warning-icon mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="card-title text-danger mb-0">
+                        <i class="fas fa-trash-alt"></i> Xác nhận xóa bài viết
+                    </h2>
+                    <p class="card-subtitle mt-2 text-muted">
+                        Hành động này không thể hoàn tác!
+                    </p>
+                </div>
+
+                <div class="card-body">
+                    <!-- Post Preview -->
+                    <div class="post-preview mb-4">
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.FeaturedImage))
+                            {
+                                <div class="col-md-4">
+                                    <img src="@Model.FeaturedImage" alt="@Model.ImageAlt"
+                                         class="img-fluid rounded shadow-sm" />
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="post-info">
+                                        <h4 class="post-title">@Model.Title</h4>
+                                        <div class="post-meta mb-3">
+                                            <span class="badge bg-primary me-2">@Model.Category</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-user"></i> @Model.Author
+                                            </span>
+                                            <span class="text-muted mx-2">•</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-calendar"></i> @Model.CreatedAt.ToString("dd/MM/yyyy")
+                                            </span>
+                                            <span class="text-muted mx-2">•</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-eye"></i> @Model.ViewCount lượt xem
+                                            </span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(Model.Summary))
+                                        {
+                                            <p class="post-summary">@Model.Summary</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-12">
+                                    <div class="post-info">
+                                        <h4 class="post-title">@Model.Title</h4>
+                                        <div class="post-meta mb-3">
+                                            <span class="badge bg-primary me-2">@Model.Category</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-user"></i> @Model.Author
+                                            </span>
+                                            <span class="text-muted mx-2">•</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-calendar"></i> @Model.CreatedAt.ToString("dd/MM/yyyy")
+                                            </span>
+                                            <span class="text-muted mx-2">•</span>
+                                            <span class="text-muted">
+                                                <i class="fas fa-eye"></i> @Model.ViewCount lượt xem
+                                            </span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(Model.Summary))
+                                        {
+                                            <p class="post-summary">@Model.Summary</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Warning Message -->
+                    <div class="warning-message">
+                        <div class="alert alert-danger" role="alert">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle"></i> Cảnh báo quan trọng!
+                            </h5>
+                            <p class="mb-2">Bạn đang chuẩn bị xóa vĩnh viễn bài viết này. Sau khi xóa:</p>
+                            <ul class="mb-0">
+                                <li>Bài viết sẽ bị xóa hoàn toàn khỏi hệ thống</li>
+                                <li>Tất cả dữ liệu liên quan sẽ mất vĩnh viễn</li>
+                                <li>Không thể khôi phục lại bài viết này</li>
+                                <li>Các liên kết đến bài viết sẽ trở thành lỗi 404</li>
+                            </ul>
+                            <hr>
+                            <p class="mb-0">
+                                <strong>
+                                    Nếu bạn chỉ muốn ẩn bài viết tạm thời, hãy sử dụng chức năng "Chỉnh sửa"
+                                    và bỏ tick "Đã xuất bản" thay vì xóa.
+                                </strong>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="post-stats mb-4">
+                        <h6><i class="fas fa-chart-bar"></i> Thống kê bài viết</h6>
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number text-primary">@Model.ViewCount</div>
+                                    <div class="stat-label">Lượt xem</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number text-success">@((DateTime.Now - Model.CreatedAt).Days)</div>
+                                    <div class="stat-label">Ngày tuổi</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number text-info">@(Model.Tags?.Count ?? 0)</div>
+                                    <div class="stat-label">Tags</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number text-warning">@(Model.Content?.Length / 500 ?? 0)</div>
+                                    <div class="stat-label">Ước tính phút đọc</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alternative Actions -->
+                    <div class="alternative-actions mb-4">
+                        <h6><i class="fas fa-lightbulb"></i> Thay vì xóa, bạn có thể:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="action-suggestion">
+                                    <i class="fas fa-edit text-warning"></i>
+                                    <strong>Chỉnh sửa bài viết</strong>
+                                    <p class="mb-0 text-muted">Cập nhật nội dung, tiêu đề hoặc thông tin khác</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="action-suggestion">
+                                    <i class="fas fa-eye-slash text-info"></i>
+                                    <strong>Ẩn bài viết</strong>
+                                    <p class="mb-0 text-muted">Chuyển thành bản nháp để ẩn khỏi công khai</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirmation Form -->
+                    <div class="confirmation-section">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-check-circle"></i> Xác nhận xóa
+                        </h6>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                            <label class="form-check-label text-danger" for="confirmDelete">
+                                <strong>Tôi hiểu rằng hành động này không thể hoàn tác</strong>
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="confirmDataLoss" required>
+                            <label class="form-check-label text-danger" for="confirmDataLoss">
+                                <strong>Tôi xác nhận muốn xóa vĩnh viễn bài viết "@Model.Title"</strong>
+                            </label>
+                        </div>
+
+                        <form method="post" id="deleteForm">
+                            <div class="action-buttons d-flex gap-3 justify-content-center flex-wrap">
+                                <button type="submit" class="btn btn-danger btn-lg" id="deleteBtn" disabled>
+                                    <i class="fas fa-trash-alt"></i> Xóa vĩnh viễn
+                                </button>
+
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-edit"></i> Chỉnh sửa thay thế
+                                </a>
+
+                                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info btn-lg">
+                                    <i class="fas fa-eye"></i> Xem bài viết
+                                </a>
+
+                                <a asp-action="Index" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-arrow-left"></i> Hủy bỏ
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .delete-post-container {
+            padding: 2rem 0;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            min-height: 100vh;
+        }
+
+        .delete-confirmation-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff5722 100%);
+            color: white;
+            padding: 3rem 2rem 2rem;
+        }
+
+        .warning-icon {
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.9);
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%
+
+        {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+
+        }
+
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .card-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .post-preview {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 5px solid #ff6b6b;
+        }
+
+        .post-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .post-meta {
+            font-size: 0.9rem;
+        }
+
+        .post-summary {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        .warning-message {
+            margin: 2rem 0;
+        }
+
+        .alert-danger {
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffebee 100%);
+            border-left: 5px solid #dc3545;
+        }
+
+        .alert-heading {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .post-stats {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 5px solid #17a2b8;
+        }
+
+        .stat-item {
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+            .stat-item:hover {
+                transform: translateY(-2px);
+            }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .alternative-actions {
+            background: #e8f5e8;
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 5px solid #28a745;
+        }
+
+        .action-suggestion {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+            .action-suggestion:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            }
+
+            .action-suggestion i {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+                display: block;
+            }
+
+        .confirmation-section {
+            background: #fff5f5;
+            border-radius: 15px;
+            padding: 2rem;
+            border-left: 5px solid #dc3545;
+        }
+
+        .form-check {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+            .form-check:hover {
+                border-color: #dc3545;
+            }
+
+        .form-check-input:checked {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .form-check-label {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .action-buttons {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px dashed #dee2e6;
+        }
+
+        .btn-lg {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .btn-lg:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border: none;
+            position: relative;
+        }
+
+            .btn-danger:hover {
+                background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+                animation: shake 0.5s ease-in-out;
+            }
+
+        @@keyframes shake {
+            0%, 100%
+
+        {
+            transform: translateX(0) translateY(-3px);
+        }
+
+        25% {
+            transform: translateX(-5px) translateY(-3px);
+        }
+
+        75% {
+            transform: translateX(5px) translateY(-3px);
+        }
+
+        }
+
+        .btn-danger:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            border: none;
+            color: #212529;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            border: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            border: none;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+            .loading-overlay.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+        .loading-spinner {
+            text-align: center;
+            color: white;
+        }
+
+            .loading-spinner i {
+                font-size: 3rem;
+                animation: spin 1s linear infinite;
+            }
+
+        @@keyframes spin {
+            0%
+
+        {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+
+        }
+
+        /* Responsive design */
+        @@media (max-width: 768px) {
+            .delete-post-container
+
+        {
+            padding: 1rem;
+        }
+
+        .card-header {
+            padding: 2rem 1rem 1rem;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .warning-icon {
+            font-size: 3rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 1rem !important;
+        }
+
+        .btn-lg {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .post-preview {
+            padding: 1rem;
+        }
+
+        .alternative-actions,
+        .confirmation-section,
+        .post-stats {
+            padding: 1rem;
+        }
+
+        }
+
+        @@media (max-width: 576px) {
+            .col-md-3
+
+        {
+            margin-bottom: 1rem;
+        }
+
+        .action-suggestion {
+            margin-bottom: 1rem;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        // Enable/disable delete button based on checkboxes
+        function toggleDeleteButton() {
+            const confirmDelete = document.getElementById('confirmDelete').checked;
+            const confirmDataLoss = document.getElementById('confirmDataLoss').checked;
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            deleteBtn.disabled = !(confirmDelete && confirmDataLoss);
+
+            if (deleteBtn.disabled) {
+                deleteBtn.style.opacity = '0.6';
+                deleteBtn.style.cursor = 'not-allowed';
+            } else {
+                deleteBtn.style.opacity = '1';
+                deleteBtn.style.cursor = 'pointer';
+            }
+        }
+
+        // Bind checkbox events
+        document.getElementById('confirmDelete').addEventListener('change', toggleDeleteButton);
+        document.getElementById('confirmDataLoss').addEventListener('change', toggleDeleteButton);
+
+        // Handle form submission
+        document.getElementById('deleteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Final confirmation dialog
+            const confirmed = confirm(
+                `⚠️ XÁC NHẬN CUỐI CÙNG ⚠️\n\n` +
+                `Bạn thực sự muốn xóa vĩnh viễn bài viết "${@Html.Raw(Json.Serialize(Model.Title))}"?\n\n` +
+                `Hành động này KHÔNG THỂ HOÀN TÁC!\n\n` +
+                `Nhấn OK để xóa vĩnh viễn, Cancel để hủy bỏ.`
+            );
+
+            if (confirmed) {
+                // Show loading overlay
+                showLoadingOverlay();
+
+                // Submit form after a brief delay to show loading
+                setTimeout(() => {
+                    this.submit();
+                }, 500);
+            }
+        });
+
+        // Show loading overlay
+        function showLoadingOverlay() {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner"></i>
+                    <h4 class="mt-3">Đang xóa bài viết...</h4>
+                    <p>Vui lòng đợi trong giây lát</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                overlay.classList.add('show');
+            }, 100);
+        }
+
+        // Add warning animation to delete button when enabled
+        function animateDeleteButton() {
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (!deleteBtn.disabled) {
+                deleteBtn.style.animation = 'none';
+                setTimeout(() => {
+                    deleteBtn.style.animation = 'pulse 2s infinite';
+                }, 10);
+            }
+        }
+
+        // Monitor checkbox changes for animation
+        document.getElementById('confirmDelete').addEventListener('change', function() {
+            if (this.checked && document.getElementById('confirmDataLoss').checked) {
+                setTimeout(animateDeleteButton, 100);
+            }
+        });
+
+        document.getElementById('confirmDataLoss').addEventListener('change', function() {
+            if (this.checked && document.getElementById('confirmDelete').checked) {
+                setTimeout(animateDeleteButton, 100);
+            }
+        });
+
+        // Add hover effects to stats
+        document.querySelectorAll('.stat-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Add click effect to action suggestions
+        document.querySelectorAll('.action-suggestion').forEach(item => {
+            item.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-3px) scale(1)';
+                }, 150);
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // ESC to cancel
+            if (e.key === 'Escape') {
+                window.location.href = '@Url.Action("Index")';
+            }
+
+            // Ctrl+E to edit
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                window.location.href = '@Url.Action("Edit", new { id = Model.Id })';
+            }
+
+            // Ctrl+D to view details
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                window.location.href = '@Url.Action("Details", new { id = Model.Id })';
+            }
+        });
+
+        // Auto-scroll to confirmation section when both checkboxes are checked
+        function autoScrollToConfirmation() {
+            const confirmDelete = document.getElementById('confirmDelete').checked;
+            const confirmDataLoss = document.getElementById('confirmDataLoss').checked;
+
+            if (confirmDelete && confirmDataLoss) {
+                document.querySelector('.action-buttons').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+
+        document.getElementById('confirmDelete').addEventListener('change', autoScrollToConfirmation);
+        document.getElementById('confirmDataLoss').addEventListener('change', autoScrollToConfirmation);
+
+        // Add visual feedback for checkbox interactions
+        document.querySelectorAll('.form-check').forEach(checkContainer => {
+            const checkbox = checkContainer.querySelector('input[type="checkbox"]');
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    checkContainer.style.borderColor = '#dc3545';
+                    checkContainer.style.backgroundColor = '#fff5f5';
+                    checkContainer.style.transform = 'scale(1.02)';
+                } else {
+                    checkContainer.style.borderColor = '#e9ecef';
+                    checkContainer.style.backgroundColor = 'white';
+                    checkContainer.style.transform = 'scale(1)';
+                }
+            });
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial state
+            toggleDeleteButton();
+
+            // Add entrance animation
+            const card = document.querySelector('.delete-confirmation-card');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(50px)';
+
+            setTimeout(() => {
+                card.style.transition = 'all 0.8s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+
+            // Show keyboard shortcuts hint
+            setTimeout(() => {
+                console.log('💡 Keyboard Shortcuts:');
+                console.log('   ESC - Hủy bỏ');
+                console.log('   Ctrl+E - Chỉnh sửa');
+                console.log('   Ctrl+D - Xem chi tiết');
+            }, 2000);
+        });
+    </script>
+}

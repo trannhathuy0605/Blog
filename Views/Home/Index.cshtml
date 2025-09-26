@@ -1,0 +1,1204 @@
+﻿@using Blog.Models
+@{
+    ViewData["Title"] = "Trang chủ - Blog";
+    var blogPosts = ViewBag.BlogPosts as List<BlogPost>;
+    var categories = ViewBag.Categories as List<string>;
+    var recentPosts = ViewBag.RecentPosts as List<BlogPost>;
+    var popularTags = ViewBag.PopularTags as List<string>;
+    var searchTerm = ViewBag.SearchTerm as string;
+}
+
+<div class="blog-container">
+    <!-- Header -->
+    <header class="blog-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="blog-title">Bài viết Blog</h1>
+                <p class="blog-subtitle">Chia sẻ kiến thức và kinh nghiệm lập trình</p>
+            </div>
+            <div class="header-actions">
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Blog" asp-action="Create" class="btn btn-create">
+                        <i class="fas fa-plus"></i> Tạo bài viết mới
+                    </a>
+                }
+                @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Blog" asp-action="MyBookmarks" class="btn btn-outline-warning">
+                        <i class="fas fa-bookmark"></i> Bài viết đã lưu
+                    </a>
+                }
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <main class="main-content">
+                @if (blogPosts?.Any() == true)
+                {
+                    <div class="posts-grid">
+                        @foreach (var post in blogPosts)
+                        {
+                            <article class="post-card">
+                                <!-- Post Image -->
+                                <div class="post-image">
+                                    @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                    {
+                                        <img src="@post.FeaturedImage" alt="@post.ImageAlt" />
+                                    }
+                                    else
+                                    {
+                                        <div class="placeholder-image">
+                                            <i class="fas fa-image"></i>
+                                            <span>Không có ảnh</span>
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(post.Category))
+                                    {
+                                        <span class="category-badge">@post.Category</span>
+                                    }
+
+                                    <!-- Draft Badge for Admin -->
+                                    @if (!post.IsPublished && User.IsInRole("Admin"))
+                                    {
+                                        <span class="draft-badge">Bản nháp</span>
+                                    }
+
+                                    <!-- Quick Actions for authenticated users -->
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <div class="post-actions">
+                                            @if (!User.IsInRole("Admin"))
+                                            {
+                                                <button onclick="toggleBookmark(@post.Id)" class="action-btn bookmark-btn"
+                                                        title="Lưu bài viết" data-post-id="@post.Id">
+                                                    <i class="far fa-bookmark"></i>
+                                                </button>
+                                            }
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <a asp-controller="Blog" asp-action="Edit" asp-route-id="@post.Id"
+                                                   class="action-btn edit-btn" title="Chỉnh sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Post Content -->
+                                <div class="post-content">
+                                    <!-- Meta Info -->
+                                    <div class="post-meta">
+                                        <div class="author-info">
+                                            <div class="author-avatar">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <span class="author-name">@post.Author</span>
+                                        </div>
+                                        <div class="post-stats">
+                                            <span><i class="far fa-calendar"></i> @post.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                            <span><i class="far fa-eye"></i> @post.ViewCount lượt xem</span>
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <span class="status-indicator">
+                                                    @if (post.IsPublished)
+                                                    {
+                                                        <i class="fas fa-check-circle text-success" title="Đã xuất bản"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-clock text-warning" title="Bản nháp"></i>
+                                                    }
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- Title -->
+                                    <h2 class="post-title">
+                                        <a asp-controller="Blog" asp-action="Details" asp-route-id="@post.Id">@post.Title</a>
+                                    </h2>
+
+                                    <!-- Description -->
+                                    <p class="post-description">
+                                        @if (!string.IsNullOrEmpty(post.Summary))
+                                        {
+                                            @(post.Summary.Length > 120 ? post.Summary.Substring(0, 120) + "..." : post.Summary)
+                                        }
+                                        else
+                                        {
+                                            @Html.Raw(post.Content.Length > 120 ? post.Content.Substring(0, 120) + "..." : post.Content)
+                                        }
+                                    </p>
+
+                                    <!-- Tags -->
+                                    @if (post.Tags?.Any() == true)
+                                    {
+                                        <div class="post-tags">
+                                            @foreach (var tag in post.Tags.Take(3))
+                                            {
+                                                <span class="tag">#@tag</span>
+                                            }
+                                        </div>
+                                    }
+
+                                    <!-- Action Buttons -->
+                                    <div class="post-bottom-actions">
+                                        <a asp-controller="Blog" asp-action="Details" asp-route-id="@post.Id" class="btn btn-read-more">
+                                            Đọc thêm <i class="fas fa-arrow-right"></i>
+                                        </a>
+
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <div class="admin-quick-actions">
+                                                <a asp-controller="Blog" asp-action="Edit" asp-route-id="@post.Id"
+                                                   class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a asp-controller="Blog" asp-action="Delete" asp-route-id="@post.Id"
+                                                   class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                                @if (!post.IsPublished)
+                                                {
+                                                    <button onclick="publishPost(@post.Id)" class="btn btn-sm btn-outline-success" title="Xuất bản">
+                                                        <i class="fas fa-upload"></i>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button onclick="unpublishPost(@post.Id)" class="btn btn-sm btn-outline-secondary" title="Chuyển thành nháp">
+                                                        <i class="fas fa-eye-slash"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    </div>
+
+                    <!-- Load More -->
+                    <div class="text-center mt-5">
+                        <button class="btn btn-load-more" onclick="loadMorePosts()">
+                            <i class="fas fa-plus"></i> Xem thêm bài viết
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- Empty State -->
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-pen-alt"></i>
+                        </div>
+                        <h3>Chưa có bài viết nào</h3>
+                        <p>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <text>Hãy tạo bài viết đầu tiên để bắt đầu chia sẻ kiến thức của bạn!</text>
+                            }
+                            else
+                            {
+                                <text>Chưa có bài viết nào được xuất bản. Hãy quay lại sau nhé!</text>
+                            }
+                        </p>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="Blog" asp-action="Create" class="btn btn-create">
+                                <i class="fas fa-plus"></i> Tạo bài viết đầu tiên
+                            </a>
+                        }
+                    </div>
+                }
+            </main>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <aside class="sidebar">
+                
+
+                <!-- Search Box -->
+                <div class="sidebar-widget search-widget">
+                    <h3 class="widget-title">Tìm kiếm</h3>
+                    <form method="get" class="search-form" asp-controller="Home" asp-action="Index">
+                        <div class="search-input-group">
+                            <input type="text" name="search" placeholder="Tìm kiếm bài viết..." value="@searchTerm" />
+                            <button type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Categories -->
+                <div class="sidebar-widget categories-widget">
+                    <h3 class="widget-title">Danh mục</h3>
+                    <div class="categories-grid">
+                        @if (categories?.Any() == true)
+                        {
+                            @foreach (var category in categories)
+                            {
+                                <a asp-controller="Home" asp-action="Index" asp-route-category="@category" class="category-btn">@category</a>
+                            }
+                        }
+                    </div>
+                </div>
+
+                
+
+                <!-- Recent Posts -->
+                @if (recentPosts?.Any() == true)
+                {
+                    <div class="sidebar-widget recent-posts-widget">
+                        <h3 class="widget-title">Bài viết gần đây</h3>
+                        <div class="recent-posts">
+                            @foreach (var post in recentPosts.Take(5))
+                            {
+                                <div class="recent-post-item">
+                                    @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                    {
+                                        <div class="recent-post-image">
+                                            <img src="@post.FeaturedImage" alt="@post.ImageAlt" />
+                                        </div>
+                                    }
+                                    <div class="recent-post-content">
+                                        <h4>
+                                            <a asp-controller="Blog" asp-action="Details" asp-route-id="@post.Id">@post.Title</a>
+                                        </h4>
+                                        <span class="recent-post-date">
+                                            <i class="far fa-calendar"></i>
+                                            @post.CreatedAt.ToString("dd/MM/yyyy")
+                                            @if (User.IsInRole("Admin") && !post.IsPublished)
+                                            {
+                                                <span class="badge bg-warning ms-1">Nháp</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Popular Tags -->
+                @if (popularTags?.Any() == true)
+                {
+                    <div class="sidebar-widget tags-widget">
+                        <h3 class="widget-title">Tags phổ biến</h3>
+                        <div class="tags-cloud">
+                            @foreach (var tag in popularTags)
+                            {
+                                <a asp-controller="Home" asp-action="Index" asp-route-tag="@tag" class="tag-item">#@tag</a>
+                            }
+                        </div>
+                    </div>
+                }
+            </aside>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        /* Existing styles... */
+        .blog-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .blog-header {
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .blog-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .blog-subtitle {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-create {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+            .btn-create:hover {
+                transform: translateY(-2px);
+                color: white;
+            }
+
+        .main-content {
+            padding-right: 0rem;
+        }
+
+        .posts-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+            .post-card:hover {
+                transform: translateY(-5px);
+            }
+
+        .post-image {
+            position: relative;
+            height: 250px;
+            overflow: hidden;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .post-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }
+
+        .post-card:hover .post-image img {
+            transform: scale(1.05);
+        }
+
+        .placeholder-image {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #adb5bd;
+            font-size: 1rem;
+        }
+
+            .placeholder-image i {
+                font-size: 3rem;
+                margin-bottom: 0.5rem;
+                opacity: 0.5;
+            }
+
+        .category-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .draft-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 193, 7, 0.9);
+            color: #856404;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Post Actions */
+        .post-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .post-card:hover .post-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: #495057;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+
+            .action-btn:hover {
+                background: white;
+                transform: scale(1.1);
+                color: #495057;
+            }
+
+        .bookmark-btn:hover {
+            background: #ffd700;
+            color: #856404;
+        }
+
+        .bookmark-btn.bookmarked {
+            background: #ffd700;
+            color: #856404;
+        }
+
+            .bookmark-btn.bookmarked i {
+                font-weight: 900;
+            }
+
+        .edit-btn:hover {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .post-content {
+            padding: 1.5rem;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .author-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .author-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .post-stats span {
+            margin-left: 1rem;
+        }
+
+        .status-indicator {
+            margin-left: 1rem;
+        }
+
+        .post-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            margin-top: 0;
+        }
+
+            .post-title a {
+                color: #2c3e50;
+                text-decoration: none;
+                transition: color 0.3s ease;
+            }
+
+                .post-title a:hover {
+                    color: #667eea;
+                }
+
+        .post-description {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .post-tags {
+            margin-bottom: 1.5rem;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .post-bottom-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .admin-quick-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-read-more {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .btn-read-more:hover {
+                background: #5a6fd8;
+                color: white;
+                transform: translateX(5px);
+            }
+
+        .btn-load-more {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+            .btn-load-more:hover {
+                background: #667eea;
+                color: white;
+            }
+
+        .sidebar {
+            padding-left: 0rem;
+        }
+
+        .sidebar-widget {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #f0f0f0;
+        }
+
+        .widget-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #667eea;
+        }
+
+        /* User Widget */
+        .user-widget {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+            .user-widget .widget-title {
+                color: white;
+                border-bottom-color: rgba(255, 255, 255, 0.3);
+            }
+
+        .user-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+            .user-actions .btn {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+                .user-actions .btn:hover {
+                    background: rgba(255, 255, 255, 0.3);
+                    border-color: rgba(255, 255, 255, 0.5);
+                    color: white;
+                }
+
+        /* Guest Widget */
+        .guest-widget {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+            .guest-widget .widget-title {
+                color: white;
+                border-bottom-color: rgba(255, 255, 255, 0.3);
+            }
+
+        .guest-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+            .guest-actions .btn-primary {
+                background: white;
+                border-color: white;
+                color: #28a745;
+            }
+
+                .guest-actions .btn-primary:hover {
+                    background: rgba(255, 255, 255, 0.9);
+                    color: #28a745;
+                }
+
+            .guest-actions .btn-outline-primary {
+                border-color: rgba(255, 255, 255, 0.7);
+                color: white;
+            }
+
+                .guest-actions .btn-outline-primary:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-color: white;
+                    color: white;
+                }
+
+        /* Admin Stats Widget */
+        .admin-stats-widget {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            color: white;
+        }
+
+            .admin-stats-widget .widget-title {
+                color: white;
+                border-bottom-color: rgba(255, 255, 255, 0.3);
+            }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .search-input-group {
+            position: relative;
+            display: flex;
+        }
+
+            .search-input-group input {
+                flex: 1;
+                padding: 12px 16px;
+                border: 2px solid #e9ecef;
+                border-radius: 25px 0 0 25px;
+                outline: none;
+                transition: border-color 0.3s ease;
+            }
+
+                .search-input-group input:focus {
+                    border-color: #667eea;
+                }
+
+            .search-input-group button {
+                background: #667eea;
+                border: none;
+                padding: 12px 16px;
+                border-radius: 0 25px 25px 0;
+                color: white;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+
+                .search-input-group button:hover {
+                    background: #5a6fd8;
+                }
+
+        .categories-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-btn {
+            background: #f8f9fa;
+            color: #6c757d;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+            .category-btn:hover,
+            .category-btn.active {
+                background: #667eea;
+                color: white;
+                transform: translateY(-2px);
+            }
+
+        .recent-posts {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .recent-post-item {
+            display: flex;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+            .recent-post-item:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .recent-post-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+            .recent-post-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .recent-post-content h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
+        }
+
+        .recent-post-content a {
+            color: #2c3e50;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            .recent-post-content a:hover {
+                color: #667eea;
+            }
+
+        .recent-post-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .tags-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag-item {
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 15px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+            .tag-item:hover {
+                background: #667eea;
+                color: white;
+                transform: translateY(-2px);
+            }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: #e9ecef;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #adb5bd;
+            margin-bottom: 2rem;
+        }
+
+        @@media (max-width: 992px) {
+            .main-content, .sidebar
+
+        {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .blog-header {
+            text-align: center;
+        }
+
+            .blog-header .d-flex {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+        .blog-title {
+            font-size: 2rem;
+        }
+
+        .header-actions {
+            justify-content: center;
+        }
+
+        }
+
+        @@media (max-width: 768px) {
+            .blog-container
+
+        {
+            padding: 0 15px;
+        }
+
+        .post-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .post-stats span {
+            margin-left: 0;
+            margin-right: 1rem;
+        }
+
+        .categories-grid {
+            justify-content: center;
+        }
+
+        .post-image {
+            height: 200px;
+        }
+
+        .post-bottom-actions {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .admin-quick-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .user-actions, .guest-actions {
+            justify-content: center;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        // Toggle bookmark function
+        async function toggleBookmark(postId) {
+            const bookmarkBtn = document.querySelector(`[data-post-id="${postId}"]`);
+            const icon = bookmarkBtn.querySelector('i');
+
+            try {
+                const response = await fetch('/Blog/ToggleBookmark', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ id: postId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.isBookmarked) {
+                        bookmarkBtn.classList.add('bookmarked');
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        bookmarkBtn.title = 'Bỏ lưu bài viết';
+                    } else {
+                        bookmarkBtn.classList.remove('bookmarked');
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        bookmarkBtn.title = 'Lưu bài viết';
+                    }
+
+                    showToast(result.message, result.isBookmarked ? 'success' : 'info');
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xử lý yêu cầu', 'error');
+            }
+        }
+
+        // Publish/Unpublish post (Admin only)
+        async function publishPost(postId) {
+            try {
+                const response = await fetch('/Blog/TogglePublish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ id: postId, publish: true })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    location.reload(); // Reload to update UI
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xuất bản bài viết', 'error');
+            }
+        }
+
+        async function unpublishPost(postId) {
+            if (confirm('Bạn có chắc muốn chuyển bài viết này thành bản nháp?')) {
+                try {
+                    const response = await fetch('/Blog/TogglePublish', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                        },
+                        body: JSON.stringify({ id: postId, publish: false })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        location.reload(); // Reload to update UI
+                    } else {
+                        showToast(result.message || 'Có lỗi xảy ra', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Có lỗi xảy ra khi ẩn bài viết', 'error');
+                }
+            }
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function loadMorePosts() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Tính năng phân trang sẽ được triển khai sau!');
+            }, 1500);
+        }
+
+        let searchTimeout;
+        const searchInput = document.querySelector('input[name="search"]');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (this.value.length > 2 || this.value.length === 0) {
+                        this.closest('form').submit();
+                    }
+                }, 800);
+            });
+        }
+
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.post-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Initialize bookmark status for authenticated users
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+            {
+                    <text>
+                    // Check bookmark status for all posts
+                    const bookmarkButtons = document.querySelectorAll('.bookmark-btn');
+                    bookmarkButtons.forEach(async (btn) => {
+                        const postId = btn.dataset.postId;
+                        try {
+                            const response = await fetch(`/Blog/IsBookmarked?postId=${postId}`);
+                            const result = await response.json();
+                            if (result.isBookmarked) {
+                                btn.classList.add('bookmarked');
+                                const icon = btn.querySelector('i');
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                                btn.title = 'Bỏ lưu bài viết';
+                            }
+                        } catch (error) {
+                            console.error('Error checking bookmark status:', error);
+                        }
+                    });
+                    </text>
+            }
+        });
+    </script>
+}

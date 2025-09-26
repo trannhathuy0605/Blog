@@ -1,0 +1,966 @@
+﻿@model IEnumerable<Blog.Models.BlogPost>
+@{
+    ViewData["Title"] = "Quản lý bài đăng nháp";
+}
+
+<div class="draft-management-container">
+    <!-- Header -->
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-file-alt"></i> Quản lý bài đăng nháp
+                </h1>
+                <p class="page-subtitle">Quản lý và xuất bản các bài viết chưa được công khai</p>
+            </div>
+            <div class="header-actions">
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Tạo bài viết mới
+                </a>
+                <a asp-action="Index" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Tất cả bài viết
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-section mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card draft-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>@ViewBag.TotalDrafts</h3>
+                        <p>Bài nháp</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card published-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>@ViewBag.TotalPublished</h3>
+                        <p>Đã xuất bản</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card total-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>@ViewBag.TotalPosts</h3>
+                        <p>Tổng bài viết</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card percentage-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>@(ViewBag.TotalPosts > 0 ? Math.Round((double)ViewBag.TotalDrafts / ViewBag.TotalPosts * 100, 1) : 0)%</h3>
+                        <p>Tỷ lệ nháp</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" name="search" class="form-control"
+                               placeholder="Tìm theo tiêu đề, nội dung, tác giả..."
+                               value="@ViewBag.SearchTerm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Danh mục</label>
+                        <select name="category" class="form-select">
+                            <option value="">Tất cả</option>
+                            @if (ViewBag.Categories is List<string> categories)
+                            {
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category" selected="@(category == ViewBag.SelectedCategory)">
+                                        @category
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tác giả</label>
+                        <select name="author" class="form-select">
+                            <option value="">Tất cả</option>
+                            @if (ViewBag.Authors is List<string> authors)
+                            {
+                                @foreach (var author in authors)
+                                {
+                                    <option value="@author" selected="@(author == ViewBag.SelectedAuthor)">
+                                        @author
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Sắp xếp</label>
+                        <select name="sortBy" class="form-select">
+                            <option value="newest" selected="@(ViewBag.SortBy == "newest")">Mới nhất</option>
+                            <option value="oldest" selected="@(ViewBag.SortBy == "oldest")">Cũ nhất</option>
+                            <option value="updated" selected="@(ViewBag.SortBy == "updated")">Cập nhật gần đây</option>
+                            <option value="title" selected="@(ViewBag.SortBy == "title")">Theo tiêu đề</option>
+                            <option value="author" selected="@(ViewBag.SortBy == "author")">Theo tác giả</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Lọc
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Actions -->
+    @if (Model?.Any() == true)
+    {
+        <div class="batch-actions-section mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="batch-selection">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll">
+                        <label class="form-check-label" for="selectAll">
+                            Chọn tất cả (<span id="selectedCount">0</span>)
+                        </label>
+                    </div>
+                </div>
+                <div class="batch-buttons">
+                    <button class="btn btn-success" id="batchPublishBtn" disabled>
+                        <i class="fas fa-upload"></i> Xuất bản đã chọn
+                    </button>
+                    <button class="btn btn-danger" id="batchDeleteBtn" disabled>
+                        <i class="fas fa-trash"></i> Xóa đã chọn
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draft Posts List -->
+        <div class="drafts-list">
+            @foreach (var post in Model)
+            {
+                <div class="draft-item" data-post-id="@post.Id">
+                    <div class="draft-card">
+                        <div class="draft-header">
+                            <div class="draft-selection">
+                                <div class="form-check">
+                                    <input class="form-check-input post-checkbox" type="checkbox"
+                                           id="post-@post.Id" value="@post.Id">
+                                    <label class="form-check-label" for="post-@post.Id"></label>
+                                </div>
+                            </div>
+                            <div class="draft-status">
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-file-alt"></i> Bản nháp
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="draft-content">
+                            <div class="row">
+                                @if (!string.IsNullOrEmpty(post.FeaturedImage))
+                                {
+                                    <div class="col-md-2">
+                                        <div class="draft-image">
+                                            <img src="@post.FeaturedImage" alt="@post.ImageAlt"
+                                                 class="img-fluid rounded">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <div class="draft-info">
+                                            <h4 class="draft-title">
+                                                <a asp-action="Edit" asp-route-id="@post.Id">@post.Title</a>
+                                            </h4>
+                                            <div class="draft-meta mb-2">
+                                                <span class="meta-item">
+                                                    <i class="fas fa-user"></i> @post.Author
+                                                </span>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-calendar"></i> @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                </span>
+                                                @if (post.UpdatedAt > post.CreatedAt.AddMinutes(1))
+                                                {
+                                                    <span class="meta-item">
+                                                        <i class="fas fa-edit"></i> Sửa: @post.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                    </span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(post.Category))
+                                                {
+                                                    <span class="meta-item">
+                                                        <span class="badge bg-primary">@post.Category</span>
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(post.Summary))
+                                            {
+                                                <p class="draft-summary">@post.Summary</p>
+                                            }
+                                            @if (post.Tags?.Any() == true)
+                                            {
+                                                <div class="draft-tags mb-2">
+                                                    @foreach (var tag in post.Tags.Take(5))
+                                                    {
+                                                        <span class="tag">#@tag</span>
+                                                    }
+                                                    @if (post.Tags.Count > 5)
+                                                    {
+                                                        <span class="tag more-tags">+@(post.Tags.Count - 5)</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="col-12">
+                                        <div class="draft-info">
+                                            <h4 class="draft-title">
+                                                <a asp-action="Edit" asp-route-id="@post.Id">@post.Title</a>
+                                            </h4>
+                                            <div class="draft-meta mb-2">
+                                                <span class="meta-item">
+                                                    <i class="fas fa-user"></i> @post.Author
+                                                </span>
+                                                <span class="meta-item">
+                                                    <i class="fas fa-calendar"></i> @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                </span>
+                                                @if (post.UpdatedAt > post.CreatedAt.AddMinutes(1))
+                                                {
+                                                    <span class="meta-item">
+                                                        <i class="fas fa-edit"></i> Sửa: @post.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                    </span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(post.Category))
+                                                {
+                                                    <span class="meta-item">
+                                                        <span class="badge bg-primary">@post.Category</span>
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(post.Summary))
+                                            {
+                                                <p class="draft-summary">@post.Summary</p>
+                                            }
+                                            @if (post.Tags?.Any() == true)
+                                            {
+                                                <div class="draft-tags mb-2">
+                                                    @foreach (var tag in post.Tags.Take(5))
+                                                    {
+                                                        <span class="tag">#@tag</span>
+                                                    }
+                                                    @if (post.Tags.Count > 5)
+                                                    {
+                                                        <span class="tag more-tags">+@(post.Tags.Count - 5)</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="draft-actions">
+                            <div class="action-buttons">
+                                <form method="post" asp-action="PublishDraft" style="display: inline;">
+                                    <input type="hidden" name="id" value="@post.Id">
+                                    <button type="submit" class="btn btn-success btn-sm"
+                                            onclick="return confirm('Bạn có chắc muốn xuất bản bài viết này?')">
+                                        <i class="fas fa-upload"></i> Xuất bản
+                                    </button>
+                                </form>
+
+                                <a asp-action="Edit" asp-route-id="@post.Id" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i> Chỉnh sửa
+                                </a>
+
+                                <a asp-action="Details" asp-route-id="@post.Id" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> Xem trước
+                                </a>
+
+                                <a asp-action="Delete" asp-route-id="@post.Id" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Xóa
+                                </a>
+                            </div>
+
+                            <div class="draft-stats">
+                                <small class="text-muted">
+                                    <i class="fas fa-file-word"></i>
+                                    ~@(post.Content?.Length / 500 ?? 0) phút đọc
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Empty State -->
+        <div class="empty-drafts">
+            <div class="empty-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <h3>Không có bài nháp nào</h3>
+            <p>
+                @if (!string.IsNullOrEmpty(ViewBag.SearchTerm as string) ||
+                            !string.IsNullOrEmpty(ViewBag.SelectedCategory as string) ||
+                            !string.IsNullOrEmpty(ViewBag.SelectedAuthor as string))
+                {
+                    <text>Không tìm thấy bài nháp nào phù hợp với bộ lọc hiện tại.</text>
+                }
+                else
+                {
+                    <text>Tất cả bài viết đã được xuất bản hoặc chưa có bài viết nào.</text>
+                }
+            </p>
+            <div class="empty-actions">
+                <a asp-action="Create" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus"></i> Tạo bài viết mới
+                </a>
+                @if (!string.IsNullOrEmpty(ViewBag.SearchTerm as string) ||
+                            !string.IsNullOrEmpty(ViewBag.SelectedCategory as string) ||
+                            !string.IsNullOrEmpty(ViewBag.SelectedAuthor as string))
+                {
+                    <a asp-action="DraftPosts" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-times"></i> Xóa bộ lọc
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Styles {
+    <style>
+        .draft-management-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .page-header .page-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 2.2rem;
+        }
+
+        .page-subtitle {
+            color: #6c757d;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Statistics Cards */
+        .stats-section {
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+            }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 1.5rem;
+        }
+
+        .draft-card .stat-icon {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+
+        .published-card .stat-icon {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .total-card .stat-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .percentage-card .stat-icon {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            color: white;
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .stat-info p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Filters Section */
+        .filters-section .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+        }
+
+        /* Batch Actions */
+        .batch-actions-section {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .batch-buttons .btn {
+            margin-left: 10px;
+        }
+
+        /* Draft Items */
+        .drafts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .draft-item {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+            .draft-item:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+
+        .draft-card {
+            padding: 1.5rem;
+        }
+
+        .draft-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .draft-selection .form-check {
+            margin: 0;
+        }
+
+        .draft-status .badge {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        .draft-image img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .draft-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+            .draft-title a {
+                color: inherit;
+                text-decoration: none;
+                transition: color 0.3s ease;
+            }
+
+                .draft-title a:hover {
+                    color: #667eea;
+                }
+
+        .draft-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .meta-item {
+            color: #6c757d;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .draft-summary {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .draft-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tag {
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            border: 1px solid #e9ecef;
+        }
+
+            .tag.more-tags {
+                background: #e9ecef;
+                color: #6c757d;
+            }
+
+        .draft-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .draft-stats {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        /* Empty State */
+        .empty-drafts {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            color: #e9ecef;
+            margin-bottom: 2rem;
+        }
+
+        .empty-drafts h3 {
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .empty-drafts p {
+            color: #adb5bd;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .empty-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive Design */
+        @@media (max-width: 992px) {
+            .draft-management-container
+
+        {
+            padding: 1rem;
+        }
+
+        .page-header .d-flex {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .header-actions {
+            justify-content: center;
+        }
+
+        .batch-actions-section .d-flex {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .batch-buttons {
+            text-align: center;
+        }
+
+        .draft-meta {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .action-buttons {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .draft-actions {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        }
+
+        @@media (max-width: 768px) {
+            .stats-section .row
+
+        {
+            gap: 1rem;
+        }
+
+        .stat-card {
+            flex-direction: column;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .stat-icon {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+
+        .draft-image {
+            margin-bottom: 1rem;
+        }
+
+        .action-buttons .btn {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+
+        .empty-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        // Select All functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.post-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBatchButtons();
+        });
+
+        // Individual checkbox change
+        document.querySelectorAll('.post-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectAllState();
+                updateBatchButtons();
+            });
+        });
+
+        // Update select all checkbox state
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('.post-checkbox');
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const selectAllCheckbox = document.getElementById('selectAll');
+
+            if (checkedBoxes.length === 0) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+            } else if (checkedBoxes.length === checkboxes.length) {
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = true;
+            } else {
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        // Update batch buttons state and selected count
+        function updateBatchButtons() {
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const batchPublishBtn = document.getElementById('batchPublishBtn');
+            const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+            const selectedCount = document.getElementById('selectedCount');
+
+            const hasSelection = checkedBoxes.length > 0;
+            batchPublishBtn.disabled = !hasSelection;
+            batchDeleteBtn.disabled = !hasSelection;
+            selectedCount.textContent = checkedBoxes.length;
+        }
+
+        // Batch Publish
+        document.getElementById('batchPublishBtn').addEventListener('click', async function() {
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const postIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+            if (postIds.length === 0) {
+                alert('Vui lòng chọn ít nhất một bài viết để xuất bản!');
+                return;
+            }
+
+            if (!confirm(`Bạn có chắc muốn xuất bản ${postIds.length} bài viết đã chọn?`)) {
+                return;
+            }
+
+            try {
+                // Show loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xuất bản...';
+
+                const response = await fetch('/Blog/BatchPublish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify(postIds)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(result.message, 'success');
+
+                    // Remove published items from list
+                    postIds.forEach(id => {
+                        const item = document.querySelector(`[data-post-id="${id}"]`);
+                        if (item) {
+                            item.style.animation = 'slideOut 0.5s ease';
+                            setTimeout(() => item.remove(), 500);
+                        }
+                    });
+
+                    // Reset selections
+                    setTimeout(() => {
+                        updateBatchButtons();
+                        updateSelectAllState();
+                        // Reload page after animation to update stats
+                        setTimeout(() => window.location.reload(), 1000);
+                    }, 600);
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xuất bản bài viết', 'error');
+            } finally {
+                // Reset button
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-upload"></i> Xuất bản đã chọn';
+            }
+        });
+
+        // Batch Delete
+        document.getElementById('batchDeleteBtn').addEventListener('click', async function() {
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const postIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+            if (postIds.length === 0) {
+                alert('Vui lòng chọn ít nhất một bài viết để xóa!');
+                return;
+            }
+
+            if (!confirm(`⚠️ CẢNH BÁO ⚠️\n\nBạn có chắc muốn xóa vĩnh viễn ${postIds.length} bài nháp đã chọn?\n\nHành động này KHÔNG THỂ HOÀN TÁC!`)) {
+                return;
+            }
+
+            try {
+                // Show loading
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
+
+                const response = await fetch('/Blog/BatchDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify(postIds)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(result.message, 'success');
+
+                    // Remove deleted items from list
+                    postIds.forEach(id => {
+                        const item = document.querySelector(`[data-post-id="${id}"]`);
+                        if (item) {
+                            item.style.animation = 'slideOut 0.5s ease';
+                            setTimeout(() => item.remove(), 500);
+                        }
+                    });
+
+                    // Reset selections
+                    setTimeout(() => {
+                        updateBatchButtons();
+                        updateSelectAllState();
+                        // Reload page after animation to update stats
+                        setTimeout(() => window.location.reload(), 1000);
+                    }, 600);
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xóa bài viết', 'error');
+            } finally {
+                // Reset button
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash"></i> Xóa đã chọn';
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 9999;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @@keyframes slideOut {
+                from {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(-100%);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBatchButtons();
+            updateSelectAllState();
+
+            // Add entrance animations
+            const draftItems = document.querySelectorAll('.draft-item');
+            draftItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    item.style.transition = 'all 0.5s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+}
